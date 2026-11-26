@@ -24,10 +24,7 @@ import json
 import sys
 
 
-def extract(url, js_runtime=None, ffmpeg_dir=None):
-    """Resolve a media URL to its stream variants (no download)."""
-    import yt_dlp
-
+def _build_opts(js_runtime=None, ffmpeg_dir=None):
     # Options are constructed directly (NOT via yt_dlp.parse_options, whose
     # return is a 4-tuple whose second element is an argparse Namespace —
     # taking it for the opts dict silently drops every flag we passed, which
@@ -48,7 +45,14 @@ def extract(url, js_runtime=None, ffmpeg_dir=None):
         opts["js_runtimes"] = {"quickjs": {"path": js_runtime}}
     if ffmpeg_dir:
         opts["ffmpeg_location"] = ffmpeg_dir
+    return opts
 
+
+def extract(url, js_runtime=None, ffmpeg_dir=None):
+    """Resolve a media URL to its stream variants (no download)."""
+    import yt_dlp
+
+    opts = _build_opts(js_runtime, ffmpeg_dir)
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
