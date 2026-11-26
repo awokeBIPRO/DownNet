@@ -40,6 +40,13 @@ object NativeBinaries {
     fun qjs(context: Context): File =
         File(context.applicationInfo.nativeLibraryDir, QJS)
 
+    /** The ffmpeg/ffprobe binaries, by their packaged .so names. */
+    fun ffmpeg(context: Context): File =
+        File(context.applicationInfo.nativeLibraryDir, FFMPEG)
+
+    fun ffprobe(context: Context): File =
+        File(context.applicationInfo.nativeLibraryDir, FFPROBE)
+
     /**
      * Names of binaries that are missing or not executable after install.
      * Checked at startup — a silent packaging regression here would otherwise

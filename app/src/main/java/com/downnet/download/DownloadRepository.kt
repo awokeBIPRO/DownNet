@@ -216,7 +216,6 @@ class DownloadRepository(
                 totals += result.second
             }
             val knownTotal = totals.filterNotNull().sum()
-            knownTotal = totals.filterNotNull().sum()
             updateItem(job.id) {
                 it.copy(
                     bytesDone = doneTotal,
