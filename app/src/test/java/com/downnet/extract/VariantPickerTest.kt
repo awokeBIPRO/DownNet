@@ -46,8 +46,8 @@ class VariantPickerTest {
         val info = MediaInfo(
             title = "t",
             formats = listOf(
-                fmt("v2160", ext = "webm", acodec = "none", height = 2160, vcodec = "vp9"),
-                fmt("awebm", ext = "webm", vcodec = "none", height = null, tbr = null, abr = 160.0),
+                fmt("v2160", ext = "webm", acodec = "none", height = 2160, vcodec = "vp9", filesize = null),
+                fmt("awebm", ext = "webm", vcodec = "none", height = null, tbr = null, abr = 160.0, filesize = null),
             ),
         )
         val choices = VariantPicker.videoChoices(info)
