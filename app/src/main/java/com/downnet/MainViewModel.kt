@@ -25,6 +25,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val info: MediaInfo,
             val muxed: List<VariantPicker.Choice>,
             val audio: VariantPicker.Choice?,
+            val images: List<VariantPicker.Choice>,
+            val diagnostics: String?,
             val fromShare: Boolean,
         ) : State
 
@@ -59,10 +61,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 .onSuccess { info ->
                     val muxed = VariantPicker.muxedChoices(info)
                     val audio = VariantPicker.audioChoice(info)
-                    if (muxed.isEmpty() && audio == null) {
-                        _state.value = State.Failed("No directly downloadable formats — needs the M2 downloader (HLS/split streams)")
+                    val images = VariantPicker.imageChoices(info)
+                    if (muxed.isEmpty() && audio == null && images.isEmpty()) {
+                        _state.value = State.Failed(
+                            "No directly downloadable formats — needs the M2 downloader (HLS/split streams)"
+                        )
                     } else {
-                        _state.value = State.Ready(url, platform, info, muxed, audio, fromShare)
+                        // Diagnostics doubles as the JS-runtime status probe:
+                        // when video formats are missing it tells us why.
+                        val diagnostics = runCatching {
+                            container.ytdlp.diagnostics()
+                        }.getOrNull()
+                        _state.value = State.Ready(
+                            url, platform, info, muxed, audio, images, diagnostics, fromShare,
+                        )
                     }
                 }
                 .onFailure { t ->

@@ -28,24 +28,27 @@ def extract(url, js_runtime=None, ffmpeg_dir=None):
     """Resolve a media URL to its stream variants (no download)."""
     import yt_dlp
 
-    argv = [
-        "--skip-download",
-        "--no-playlist",
-        "--playlist-items", "1",
-        "--ignore-config",
-        "--no-warnings",
-        "--socket-timeout", "15",
-    ]
+    # Options are constructed directly (NOT via yt_dlp.parse_options, whose
+    # return is a 4-tuple whose second element is an argparse Namespace —
+    # taking it for the opts dict silently drops every flag we passed, which
+    # is exactly how the JS runtime once went missing and YouTube throttled
+    # to ~35 KB/s with no video formats).
+    opts = {
+        "skip_download": True,
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "playlist_items": "1",
+        "socket_timeout": 15,
+    }
     if js_runtime:
-        # CLI flag form: runtime-name:path-to-binary. Passing the CLI flags
-        # through yt_dlp.parse_options lets yt-dlp itself translate them into
-        # whatever internal option shape this version expects.
-        argv += ["--js-runtimes", "quickjs:" + js_runtime]
+        # Dict form straight out of yt-dlp's parse_options: REPLACES the
+        # default {'deno': {}} rather than appending to it, so quickjs is the
+        # only enabled runtime and deno's priority never matters.
+        opts["js_runtimes"] = {"quickjs": {"path": js_runtime}}
     if ffmpeg_dir:
-        argv += ["--ffmpeg-location", ffmpeg_dir]
-    argv += ["--", url]
+        opts["ffmpeg_location"] = ffmpeg_dir
 
-    opts = _opts_from_argv(argv, yt_dlp)
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -82,31 +85,6 @@ def selfcheck(js_runtime=None):
 
 
 # --- internals -----------------------------------------------------------
-
-def _opts_from_argv(argv, yt_dlp):
-    """
-    Preferred path: let yt-dlp's own CLI parser translate the flags (correct
-    option keys across versions). Fallback: a hand-rolled minimal dict for the
-    builds where the parse_options return shape differs.
-    """
-    try:
-        parsed = yt_dlp.parse_options(argv)
-        opts = parsed[1]
-        if isinstance(opts, dict):
-            return opts
-    except Exception:
-        pass
-    opts = {
-        "skip_download": True,
-        "noplaylist": True,
-        "playlist_items": "1",
-        "ignoreconfig": True,
-        "socket_timeout": 15,
-    }
-    if "--ffmpeg-location" in argv:
-        opts["ffmpeg_location"] = argv[argv.index("--ffmpeg-location") + 1]
-    return opts
-
 
 def _slim(info):
     """Keep only what the Kotlin quality-picker and downloader need."""

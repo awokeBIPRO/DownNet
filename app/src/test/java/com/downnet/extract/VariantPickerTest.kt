@@ -93,6 +93,24 @@ class VariantPickerTest {
     }
 
     @Test
+    fun `image formats become photo choices and skip codecs`() {
+        val photo = fmt(
+            "p0", ext = "jpg", vcodec = "none", acodec = "none",
+            height = null, tbr = null, filesize = 200_000,
+        )
+        val info = MediaInfo(title = "t", formats = listOf(photo, fmt("18", height = 360)))
+        val images = VariantPicker.imageChoices(info)
+        assertEquals(1, images.size)
+        assertEquals("Photo", images[0].label)
+        assertEquals("JPG", images[0].detail)
+        // Codec-bearing formats never leak into the photo list.
+        val two = VariantPicker.imageChoices(
+            MediaInfo(title = "t", formats = listOf(photo, photo.copy(formatId = "p1")))
+        )
+        assertEquals(listOf("Photo 1", "Photo 2"), two.map { it.label })
+    }
+
+    @Test
     fun `byte formatting`() {
         assertEquals("999 B", VariantPicker.formatBytes(999))
         assertEquals("10 KB", VariantPicker.formatBytes(10_240))

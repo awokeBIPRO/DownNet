@@ -43,6 +43,15 @@ android {
     }
 
     signingConfigs {
+        getByName("debug") {
+            // Checked-in key: stable signature across CI runs so debug
+            // updates install over each other. See .gitignore for the
+            // rationale; conventionally shareable, carries no trust.
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (hasKeystore) {
             create("release") {
                 storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))

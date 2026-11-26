@@ -16,10 +16,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.downnet.R
 import com.downnet.core.urlnorm.UrlNormalizer.Platform
 import com.downnet.extract.MediaInfo
 import com.downnet.extract.VariantPicker
@@ -36,6 +38,8 @@ fun QualitySheet(
     platform: Platform,
     muxed: List<VariantPicker.Choice>,
     audio: VariantPicker.Choice?,
+    images: List<VariantPicker.Choice>,
+    diagnostics: String?,
     onPick: (VariantPicker.Choice) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -73,11 +77,41 @@ fun QualitySheet(
                 ChoiceRow(choice) { onPick(choice) }
             }
 
+            if (images.isNotEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(14.dp))
+                images.forEach { choice ->
+                    Spacer(Modifier.height(4.dp))
+                    ChoiceRow(choice) { onPick(choice) }
+                }
+            }
+
             if (audio != null) {
                 Spacer(Modifier.height(14.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(14.dp))
                 ChoiceRow(audio) { onPick(audio) }
+            }
+
+            if (muxed.isEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    stringResource(R.string.only_audio_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
+
+            if (!diagnostics.isNullOrEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    diagnostics,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

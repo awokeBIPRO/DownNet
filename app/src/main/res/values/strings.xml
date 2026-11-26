@@ -18,6 +18,7 @@
     <string name="extraction_failed">Couldn\'t get this media</string>
     <string name="retry">Try again</string>
     <string name="download_complete_title">Downloaded</string>
+    <string name="only_audio_note">Only audio/photo formats were available — higher video streams need the JS challenge runtime (see engine status below) or the M2 downloader.</string>
     <string name="channel_downloads">Downloads</string>
     <string name="channel_downloads_desc">Progress and completion of media downloads</string>
 </resources>

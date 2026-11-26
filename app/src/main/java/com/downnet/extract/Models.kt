@@ -93,6 +93,21 @@ object VariantPicker {
                 )
             }
 
+    /** Static posts: no codecs at all, just a direct image file. */
+    fun imageChoices(info: MediaInfo): List<Choice> {
+        val images = info.formats.filter {
+            !it.hasVideo && !it.hasAudio && it.isDirectFile
+        }
+        return images.mapIndexed { index, fmt ->
+            Choice(
+                format = fmt,
+                isAudioOnly = false,
+                label = if (images.size > 1) "Photo ${index + 1}" else "Photo",
+                detail = fmt.ext?.uppercase() ?: "Image",
+            )
+        }
+    }
+
     fun audioChoice(info: MediaInfo): Choice? =
         info.formats.asSequence()
             .filter { it.hasAudio && !it.hasVideo && it.isDirectFile }

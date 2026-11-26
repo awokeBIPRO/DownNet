@@ -53,12 +53,18 @@ class YtDlp(private val context: Context) {
         return info
     }
 
-    /** Diagnostics for the settings screen / smoke tests. */
-    fun selfcheck(): String = runCatching {
-        ensurePythonStarted()
-        val bridge: PyObject = Python.getInstance().getModule("bridge")
-        bridge.callAttr("selfcheck", NativeBinaries.qjs(context).absolutePath).toString()
-    }.getOrElse { "selfcheck failed: ${it.message}" }
+    /**
+     * Engine diagnostics for the quality sheet: yt-dlp version, ejs presence,
+     * and whether the QuickJS binary actually exec's on this device. Small
+     * and fast — one extra bridge call after extraction.
+     */
+    suspend fun diagnostics(): String? = withContext(dispatcher) {
+        runCatching {
+            ensurePythonStarted()
+            val bridge: PyObject = Python.getInstance().getModule("bridge")
+            bridge.callAttr("selfcheck", NativeBinaries.qjs(context).absolutePath).toString()
+        }.getOrNull()
+    }
 
     private fun ensurePythonStarted() {
         // Lazy rather than in Application.onCreate: interpreter startup

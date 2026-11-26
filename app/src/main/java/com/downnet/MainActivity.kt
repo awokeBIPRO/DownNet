@@ -175,6 +175,8 @@ fun DownNetApp(startUrl: String?) {
             platform = ready.platform,
             muxed = ready.muxed,
             audio = ready.audio,
+            images = ready.images,
+            diagnostics = ready.diagnostics,
             onPick = { choice ->
                 maybeAskNotificationPermission()
                 vm.startDownload(ready.info, choice.format)

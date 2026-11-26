@@ -17,6 +17,10 @@ build/native/
 *.jks
 *.keystore
 keystore.properties
+# The debug keystore is intentionally checked in: CI runners are ephemeral
+# and would otherwise mint a fresh debug key per run, forcing reinstalls
+# between debug builds. Conventionally shareable; carries no trust.
+!app/debug.keystore
 
 # Artifacts live in CI / Releases.
 *.apk

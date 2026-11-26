@@ -82,3 +82,52 @@ jobs:
           name: downnet-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: ignore
+
+  ytdlp-smoke:
+    name: yt-dlp + QuickJS extraction smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Host build of the same QuickJS-NG tag the app bundles. The runner has
+      # no deno either, so this exercises exactly the runtime fallback the
+      # Android build relies on.
+      - name: Build host quickjs (same tag as the app)
+        run: |
+          git clone --depth 1 --branch v0.18.0 https://github.com/quickjs-ng/quickjs /tmp/qjs
+          cmake -B /tmp/qjs/build -S /tmp/qjs -DCMAKE_BUILD_TYPE=Release >/dev/null
+          cmake --build /tmp/qjs/build --target qjs_exe -j "$(nproc)" >/dev/null
+          QJS="$(find /tmp/qjs/build -type f \( -name qjs -o -name qjs_exe \) | head -1)"
+          echo "qjs at $QJS"
+          "$QJS" --version
+          echo "QJS=$QJS" >>"$GITHUB_ENV"
+
+      - name: Install pinned yt-dlp (same as the app)
+        run: pip install "yt-dlp[default]==2026.11.23"
+
+      # The app's real bridge, a real video, the real runtime. If video
+      # formats come back, the wiring is right everywhere but the device.
+      - name: Run the app's bridge.py through QuickJS against a real video
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          sys.path.insert(0, "app/src/main/python")
+          import bridge
+          qjs = os.environ["QJS"]
+          raw = bridge.extract(
+              "https://www.youtube.com/watch?v=jNQXAC9IVRw", js_runtime=qjs)
+          resp = json.loads(raw)
+          assert resp["ok"], f"bridge extraction failed: {resp.get('error')}"
+          formats = resp["info"]["formats"]
+          video = [f for f in formats if f.get("vcodec") not in (None, "none")]
+          audio = [f for f in formats if f.get("acodec") not in (None, "none")]
+          print(f"formats={len(formats)} video={len(video)} audio={len(audio)}")
+          print("engine:", bridge.selfcheck(qjs))
+          assert video, "NO VIDEO FORMATS - JS runtime not engaging"
+          PY
