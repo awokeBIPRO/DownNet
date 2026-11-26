@@ -10,8 +10,37 @@ permissions:
   contents: read
 
 jobs:
+  native:
+    name: Cross-build native binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # ubuntu-latest ships the SDK with cmdline-tools; only the NDK is
+      # needed for the cross-build (the setup-android action's default
+      # package list references the removed 'tools' package and fails).
+      - name: Install NDK
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKMANAGER" ] || SDKMANAGER="$(command -v sdkmanager)"
+          "$SDKMANAGER" --install "ndk;27.0.12077973" >/dev/null
+          echo "ANDROID_NDK=$ANDROID_HOME/ndk/27.0.12077973" >>"$GITHUB_ENV"
+
+      - name: Cache native binaries (ffmpeg / ffprobe / quickjs)
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          path: app/src/main/jniLibs
+          key: native-${{ runner.os }}-${{ hashFiles('native/build-binaries.sh') }}
+
+      - name: Cross-build ffmpeg / ffprobe / quickjs
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        run: bash native/build-binaries.sh
+
   build:
     name: Build debug APK + unit tests
+    needs: native
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,30 +57,18 @@ jobs:
         with:
           python-version: "3.12"
 
-      # ubuntu-latest images ship the Android SDK with cmdline-tools; the
-      # setup-android action's default package list references the removed
-      # 'tools' package and fails, so we drive sdkmanager ourselves.
-      - name: Install platform and NDK
+      - name: Install platform and build-tools
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           [ -x "$SDKMANAGER" ] || SDKMANAGER="$(command -v sdkmanager)"
-          echo "Using $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0" "ndk;27.0.12077973" >/dev/null
-          echo "ANDROID_NDK=$ANDROID_HOME/ndk/27.0.12077973" >>"$GITHUB_ENV"
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0" >/dev/null
 
-      - name: Cache native binaries (ffmpeg / ffprobe / quickjs)
-        id: native-cache
+      - name: Restore native binaries
         uses: actions/cache@v4
         with:
           path: app/src/main/jniLibs
           key: native-${{ runner.os }}-${{ hashFiles('native/build-binaries.sh') }}
-          restore-keys: |
-            native-${{ runner.os }}-
-
-      - name: Cross-build ffmpeg / ffprobe / quickjs
-        if: steps.native-cache.outputs.cache-hit != 'true'
-        run: bash native/build-binaries.sh
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
