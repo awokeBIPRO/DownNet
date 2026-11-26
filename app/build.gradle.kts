@@ -109,10 +109,11 @@ chaquopy {
 }
 
 dependencies {
-    // 2026.11.01's artifacts (material3 1.5.0) hard-require compileSdk 37 +
-    // AGP 9.1; 2026.09.00 (material3 1.4.0 / foundation 1.12.1) is the newest
-    // BOM that accepts this AGP 8.10.1 + compileSdk 36 toolchain.
-    val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
+    // Compose 1.12.x (BOM 2026.08.00+) and material3 1.5.0 (BOM 2026.11.01)
+    // hard-require compileSdk 37 + AGP 9.1 via AAR metadata. BOM 2026.06.01
+    // (compose 1.11.4 / material3 1.4.0, minCompileSdk 35 / min AGP 8.6) is
+    // the newest BOM that accepts this AGP 8.10.1 + compileSdk 36 toolchain.
+    val composeBom = platform("androidx.compose:compose-bom:2026.06.01")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -121,8 +122,9 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.activity:activity-compose:1.13.0")
-    // androidx.core 1.19+ merged core-ktx into the main artifact.
-    implementation("androidx.core:core:1.19.1")
+    // androidx.core 1.19+ (and the core-ktx it pulls) hard-require compileSdk
+    // 37 + AGP 9.1; 1.18.0 is the newest line that accepts this toolchain.
+    implementation("androidx.core:core:1.18.0")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
