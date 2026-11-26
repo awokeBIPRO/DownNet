@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DownNet</string>
+    <string name="shortcut_quick_save">Save media</string>
+    <string name="share_no_link">No link in what you shared</string>
+    <string name="paste_hint">Paste a media link…</string>
+    <string name="paste">Paste</string>
+    <string name="incoming_link">Link received</string>
+    <string name="download">Download</string>
+    <string name="empty_title">Nothing here yet</string>
+    <string name="empty_body">Share a link from any app — YouTube, X, Instagram — and DownNet will grab the media for you. You can also paste a link below or just copy one and open DownNet.</string>
+    <string name="queue_section">Downloads</string>
+    <string name="download_coming_soon">The download pipeline is being wired up next</string>
+</resources>

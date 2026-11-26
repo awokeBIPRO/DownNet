@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Sharing-shortcut declaration. The dynamic shortcut pushed at runtime by
+    SharingShortcuts carries the matching category, which is what puts
+    DownNet's chip in the direct-share row of the share sheet.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <share-target android:targetClass="com.downnet.share.ShareReceiverActivity">
+        <data android:mimeType="text/plain" />
+        <category android:name="com.downnet.category.DOWNLOAD" />
+    </share-target>
+</shortcuts>

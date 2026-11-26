@@ -1,0 +1,25 @@
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Native binaries are cross-built in CI (native/build-binaries.sh), never committed.
+app/src/main/jniLibs/
+build/native/
+
+# Signing material never enters the repo.
+*.jks
+*.keystore
+keystore.properties
+
+# Artifacts live in CI / Releases.
+*.apk
+*.aab
+
+.DS_Store
