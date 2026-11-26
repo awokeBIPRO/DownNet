@@ -96,22 +96,35 @@ build_ffmpeg_abi() {
 }
 
 build_qjs_abi() {
-    local abi=$1 triple=$2
+    local abi=$1
     local src="$WORK/quickjs"
     echo "==> quickjs $abi"
     fetch "$QJS_URL" "$QJS_TAG" "$src"
     cd "$src"
-    make clean >/dev/null 2>&1 || true
-    # quickjs-ng cross-builds through its Makefile's CC/AR/CFLAGS/LDFLAGS.
-    make -j"$JOBS" qjs \
-        CC="$TC/clang$EXE" \
-        AR="$TC/llvm-ar$EXE" \
-        RANLIB="$TC/llvm-ranlib$EXE" \
-        CFLAGS="--target=$triple$API -O2" \
-        LDFLAGS="--target=$triple$API -Wl,-z,max-page-size=16384"
+    rm -rf "build/$abi"
+    # quickjs-ng builds through CMake — its Makefile has no qjs target (make
+    # falls back to a builtin link rule with no libquickjs, which fails).
+    # The NDK toolchain file wires up the cross compiler.
+    cmake -B "build/$abi" -S . \
+        -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+        -DANDROID_ABI="$abi" \
+        -DANDROID_PLATFORM="android-$API" \
+        -DCMAKE_BUILD_TYPE=MinSizeRel \
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+        ${EXTRA_CMAKE:-}
+    if ! cmake --build "build/$abi" --target qjs -j"$JOBS"; then
+        # Older/newer trees may not expose a qjs target; build everything.
+        cmake --build "build/$abi" -j"$JOBS"
+    fi
+    local qjs_bin
+    qjs_bin="$(find "build/$abi" -type f -name qjs | head -1)"
+    if [ -z "$qjs_bin" ]; then
+        echo "qjs binary not found after build" >&2
+        exit 1
+    fi
     local out="$REPO/app/src/main/jniLibs/$abi"
     mkdir -p "$out"
-    cp qjs "$out/libqjs.so"
+    cp "$qjs_bin" "$out/libqjs.so"
     "$TC/llvm-strip$EXE" --strip-unneeded "$out/libqjs.so"
     echo "    -> $out/libqjs.so ($(wc -c < "$out/libqjs.so") bytes)"
 }
@@ -121,11 +134,11 @@ for abi in $ABIS; do
     case $abi in
         arm64-v8a)
             CFLAGS_ABI="" build_ffmpeg_abi arm64-v8a aarch64-linux-android arm64
-            build_qjs_abi arm64-v8a aarch64-linux-android
+            build_qjs_abi arm64-v8a
             ;;
         x86_64)
             CFLAGS_ABI="" build_ffmpeg_abi x86_64 x86_64-linux-android x86_64
-            build_qjs_abi x86_64 x86_64-linux-android
+            build_qjs_abi x86_64
             ;;
         *) echo "unknown ABI $abi" >&2; exit 1 ;;
     esac
