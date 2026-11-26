@@ -12,7 +12,9 @@ import java.net.URI
  */
 object UrlNormalizer {
 
-    enum class Platform { YOUTUBE, X, INSTAGRAM, GENERIC }
+    enum class Platform(val label: String) {
+        YOUTUBE("YouTube"), X("X"), INSTAGRAM("Instagram"), GENERIC("Web"),
+    }
 
     data class Normalized(val url: String, val platform: Platform)
 

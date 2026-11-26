@@ -2,6 +2,9 @@ package com.downnet.core
 
 import android.content.Context
 import com.downnet.core.urlnorm.ShortLinkResolver
+import com.downnet.download.DownloadRepository
+import com.downnet.extract.ExtractorRegistry
+import com.downnet.extract.ytdlp.YtDlp
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -23,4 +26,11 @@ class AppContainer(context: Context) {
     }
 
     val shortLinkResolver: ShortLinkResolver by lazy { ShortLinkResolver(httpClient) }
+
+    val ytdlp: YtDlp by lazy { YtDlp(appContext) }
+
+    val extractorRegistry: ExtractorRegistry by lazy { ExtractorRegistry(ytdlp) }
+
+    val downloads: DownloadRepository by lazy { DownloadRepository(appContext, httpClient) }
 }
+

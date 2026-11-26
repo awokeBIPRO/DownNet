@@ -5,6 +5,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.chaquo.python")
 }
 
@@ -125,6 +126,11 @@ dependencies {
     // androidx.core 1.19+ (and the core-ktx it pulls) hard-require compileSdk
     // 37 + AGP 9.1; 1.18.0 is the newest line that accepts this toolchain.
     implementation("androidx.core:core:1.18.0")
+    // lifecycle 2.11+ is from the compileSdk-37 era; 2.10.0 is the ceiling fit.
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 

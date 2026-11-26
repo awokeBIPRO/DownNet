@@ -116,7 +116,7 @@ def _slim(info):
         keys = (
             "format_id", "format_note", "ext", "protocol", "url",
             "vcodec", "acodec", "width", "height", "fps", "tbr", "abr",
-            "filesize", "filesize_approx", "language",
+            "filesize", "filesize_approx", "language", "http_headers",
         )
         return {k: fmt.get(k) for k in keys if fmt.get(k) is not None}
     out = {}

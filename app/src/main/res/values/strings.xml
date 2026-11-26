@@ -9,6 +9,15 @@
     <string name="download">Download</string>
     <string name="empty_title">Nothing here yet</string>
     <string name="empty_body">Share a link from any app — YouTube, X, Instagram — and DownNet will grab the media for you. You can also paste a link below or just copy one and open DownNet.</string>
+    <string name="entry_share">Share → DownNet from any app</string>
+    <string name="entry_copy">Copy a link, then open DownNet</string>
+    <string name="entry_paste">Paste a link below</string>
     <string name="queue_section">Downloads</string>
-    <string name="download_coming_soon">The download pipeline is being wired up next</string>
+    <string name="resolving_link">Resolving link…</string>
+    <string name="extracting_streams">Extracting streams…</string>
+    <string name="extraction_failed">Couldn\'t get this media</string>
+    <string name="retry">Try again</string>
+    <string name="download_complete_title">Downloaded</string>
+    <string name="channel_downloads">Downloads</string>
+    <string name="channel_downloads_desc">Progress and completion of media downloads</string>
 </resources>
