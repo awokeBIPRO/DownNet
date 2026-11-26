@@ -38,14 +38,25 @@ object MediaStorePublisher {
         kind: MediaKind,
     ): Uri {
         try {
-            return tryStore(context, staged, displayName, mime, kind)
-        } catch (t: Throwable) {
-            Log.w(TAG, "Primary ${kind.name.lowercase()} location rejected; falling back to Downloads", t)
-        }
-        return runCatching { tryStore(context, staged, displayName, mime, null) }
-            .getOrElse { t ->
-                throw IOException("MediaStore rejected the write: ${t.message}", t)
+            try {
+                return tryStore(context, staged, displayName, mime, kind)
+            } catch (t: Throwable) {
+                Log.w(
+                    TAG,
+                    "Primary ${kind.name.lowercase()} location rejected; falling back to Downloads",
+                    t,
+                )
             }
+            return runCatching { tryStore(context, staged, displayName, mime, null) }
+                .getOrElse { t ->
+                    throw IOException("MediaStore rejected the write: ${t.message}", t)
+                }
+        } finally {
+            // Exactly once, after ALL attempts: deleting inside tryStore's
+            // own finally used to destroy the staged file before the
+            // Downloads fallback could copy it (open failed: ENOENT).
+            staged.delete()
+        }
     }
 
     /** kind == null means the universal Downloads location. */
@@ -96,8 +107,6 @@ object MediaStorePublisher {
             // Never leave a half-written pending row behind.
             uri?.let { runCatching { resolver.delete(it, null, null) } }
             throw t
-        } finally {
-            staged.delete()
         }
     }
 
