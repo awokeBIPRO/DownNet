@@ -58,40 +58,83 @@ data class MediaFormat(
 
 /**
  * Turns yt-dlp's format soup into the short list the quality sheet shows.
- * M1 policy: muxed (video+audio in one file) rows plus one best audio-only
- * row; split video+audio streams with ffmpeg merging arrive in M2.
+ * A choice is a COMPOSITION: one file (muxed, audio, photo), a split
+ * video+audio pair to merge with ffmpeg, or an HLS playlist to reassemble.
  */
 object VariantPicker {
 
+    enum class Kind { MERGED, MUXED, HLS, AUDIO, PHOTO }
+
     data class Choice(
-        val format: MediaFormat,
-        val isAudioOnly: Boolean,
+        val formats: List<MediaFormat>,
+        val kind: Kind,
         val label: String,
         val detail: String,
     )
 
-    fun muxedChoices(info: MediaInfo, limit: Int = 8): List<Choice> =
-        info.formats.asSequence()
-            .filter { it.hasVideo && it.hasAudio && it.isDirectFile }
+    /**
+     * One row per resolution, best composition per resolution:
+     * merged split-streams > HLS > ready-muxed file.
+     */
+    fun videoChoices(info: MediaInfo, limit: Int = 10): List<Choice> {
+        val direct = info.formats.filter { it.isDirectFile }
+        val muxed = direct.filter { it.hasVideo && it.hasAudio }.groupBy { it.height ?: 0 }
+        val split = direct.filter { it.hasVideo && !it.hasAudio }.groupBy { it.height ?: 0 }
+        val hls = info.formats
+            .filter { (it.protocol?.startsWith("m3u8") == true) && it.hasVideo && it.url != null }
             .groupBy { it.height ?: 0 }
-            .map { (_, group) ->
-                group.maxWith(
-                    compareBy({ it.ext == "mp4" }, { it.tbr ?: 0.0 })
-                )
-            }
-            .sortedByDescending { it.height ?: 0 }
-            .take(limit)
-            .map { fmt ->
-                Choice(
-                    format = fmt,
-                    isAudioOnly = false,
-                    label = if ((fmt.height ?: 0) > 0) "${fmt.height}p" else "Video",
+        val audio = bestAudioFormat(info)
+
+        val heights = (muxed.keys + split.keys + hls.keys).toSortedSet(
+            compareByDescending { it }
+        )
+        val choices = mutableListOf<Choice>()
+        for (height in heights) {
+            val splitBest = split[height]?.maxWith(
+                compareBy({ it.ext == "webm" }, { it.tbr ?: 0.0 })
+            )
+            if (splitBest != null && audio != null) {
+                val container = if (splitBest.ext == "webm" || audio.ext == "webm") "mkv" else "mp4"
+                val totalBytes = (splitBest.bytes ?: 0L) + (audio.bytes ?: 0L)
+                choices += Choice(
+                    formats = listOf(splitBest, audio),
+                    kind = Kind.MERGED,
+                    label = heightLabel(height),
                     detail = listOfNotNull(
-                        fmt.ext?.uppercase(),
-                        fmt.bytes?.let { formatBytes(it) },
+                        container.uppercase(),
+                        if (totalBytes > 0) formatBytes(totalBytes) else null,
+                        "merge",
+                    ).joinToString(" · "),
+                )
+                continue
+            }
+            val hlsBest = hls[height]?.maxWith(compareBy { it.tbr ?: 0.0 })
+            if (hlsBest != null) {
+                choices += Choice(
+                    formats = listOf(hlsBest),
+                    kind = Kind.HLS,
+                    label = heightLabel(height),
+                    detail = "HLS → MP4",
+                )
+                continue
+            }
+            val muxedBest = muxed[height]?.maxWith(
+                compareBy({ it.ext == "mp4" }, { it.tbr ?: 0.0 })
+            )
+            if (muxedBest != null) {
+                choices += Choice(
+                    formats = listOf(muxedBest),
+                    kind = Kind.MUXED,
+                    label = heightLabel(height),
+                    detail = listOfNotNull(
+                        muxedBest.ext?.uppercase(),
+                        muxedBest.bytes?.let { formatBytes(it) },
                     ).joinToString(" · "),
                 )
             }
+        }
+        return choices.take(limit)
+    }
 
     /** Static posts: no codecs at all, just a direct image file. */
     fun imageChoices(info: MediaInfo): List<Choice> {
@@ -100,8 +143,8 @@ object VariantPicker {
         }
         return images.mapIndexed { index, fmt ->
             Choice(
-                format = fmt,
-                isAudioOnly = false,
+                formats = listOf(fmt),
+                kind = Kind.PHOTO,
                 label = if (images.size > 1) "Photo ${index + 1}" else "Photo",
                 detail = fmt.ext?.uppercase() ?: "Image",
             )
@@ -109,21 +152,25 @@ object VariantPicker {
     }
 
     fun audioChoice(info: MediaInfo): Choice? =
+        bestAudioFormat(info)?.let { fmt ->
+            Choice(
+                formats = listOf(fmt),
+                kind = Kind.AUDIO,
+                label = "Audio",
+                detail = listOfNotNull(
+                    fmt.ext?.uppercase(),
+                    fmt.abr?.let { "%.0f kbps".format(it) },
+                    fmt.bytes?.let { formatBytes(it) },
+                ).joinToString(" · "),
+            )
+        }
+
+    private fun bestAudioFormat(info: MediaInfo): MediaFormat? =
         info.formats.asSequence()
             .filter { it.hasAudio && !it.hasVideo && it.isDirectFile }
             .maxByOrNull { (if (it.ext == "m4a" || it.ext == "mp4") 1e6 else 0.0) + (it.abr ?: 0.0) }
-            ?.let { fmt ->
-                Choice(
-                    format = fmt,
-                    isAudioOnly = true,
-                    label = "Audio",
-                    detail = listOfNotNull(
-                        fmt.ext?.uppercase(),
-                        fmt.abr?.let { "%.0f kbps".format(it) },
-                        fmt.bytes?.let { formatBytes(it) },
-                    ).joinToString(" · "),
-                )
-            }
+
+    private fun heightLabel(height: Int) = if (height > 0) "${height}p" else "Video"
 
     fun formatBytes(bytes: Long): String = when {
         bytes >= 1L shl 30 -> "%.1f GB".format(bytes / 1073741824.0)

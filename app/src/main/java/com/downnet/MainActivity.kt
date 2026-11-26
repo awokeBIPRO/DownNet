@@ -173,13 +173,13 @@ fun DownNetApp(startUrl: String?) {
         QualitySheet(
             info = ready.info,
             platform = ready.platform,
-            muxed = ready.muxed,
+            video = ready.video,
             audio = ready.audio,
             images = ready.images,
             diagnostics = ready.diagnostics,
             onPick = { choice ->
                 maybeAskNotificationPermission()
-                vm.startDownload(ready.info, choice.format)
+                vm.startDownload(ready.info, choice)
             },
             onDismiss = { vm.dismissResult() },
         )

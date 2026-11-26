@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.downnet.core.urlnorm.UrlNormalizer
 import com.downnet.core.urlnorm.UrlNormalizer.Platform
-import com.downnet.extract.MediaFormat
 import com.downnet.extract.MediaInfo
 import com.downnet.extract.VariantPicker
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +22,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val url: String,
             val platform: Platform,
             val info: MediaInfo,
-            val muxed: List<VariantPicker.Choice>,
+            val video: List<VariantPicker.Choice>,
             val audio: VariantPicker.Choice?,
             val images: List<VariantPicker.Choice>,
             val diagnostics: String?,
@@ -59,13 +58,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = State.Extracting(url)
             container.extractorRegistry.extract(url)
                 .onSuccess { info ->
-                    val muxed = VariantPicker.muxedChoices(info)
+                    val video = VariantPicker.videoChoices(info)
                     val audio = VariantPicker.audioChoice(info)
                     val images = VariantPicker.imageChoices(info)
-                    if (muxed.isEmpty() && audio == null && images.isEmpty()) {
-                        _state.value = State.Failed(
-                            "No directly downloadable formats — needs the M2 downloader (HLS/split streams)"
-                        )
+                    if (video.isEmpty() && audio == null && images.isEmpty()) {
+                        _state.value = State.Failed("No downloadable formats found for this link")
                     } else {
                         // Diagnostics doubles as the JS-runtime status probe:
                         // when video formats are missing it tells us why.
@@ -73,7 +70,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             container.ytdlp.diagnostics()
                         }.getOrNull()
                         _state.value = State.Ready(
-                            url, platform, info, muxed, audio, images, diagnostics, fromShare,
+                            url, platform, info, video, audio, images, diagnostics, fromShare,
                         )
                     }
                 }
@@ -87,9 +84,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         lastRaw?.let { onLink(it, lastFromShare) }
     }
 
-    fun startDownload(info: MediaInfo, format: MediaFormat) {
+    fun startDownload(info: MediaInfo, choice: VariantPicker.Choice) {
         val current = _state.value as? State.Ready ?: return
-        container.downloads.enqueue(info, format, current.platform, current.fromShare)
+        container.downloads.enqueue(info, choice, current.platform, current.fromShare)
         _state.value = State.Idle
     }
 

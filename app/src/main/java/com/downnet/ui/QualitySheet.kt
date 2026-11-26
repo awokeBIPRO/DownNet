@@ -36,7 +36,7 @@ import com.downnet.extract.VariantPicker
 fun QualitySheet(
     info: MediaInfo,
     platform: Platform,
-    muxed: List<VariantPicker.Choice>,
+    video: List<VariantPicker.Choice>,
     audio: VariantPicker.Choice?,
     images: List<VariantPicker.Choice>,
     diagnostics: String?,
@@ -72,7 +72,7 @@ fun QualitySheet(
             }
             Spacer(Modifier.height(20.dp))
 
-            muxed.forEachIndexed { index, choice ->
+            video.forEachIndexed { index, choice ->
                 if (index > 0) Spacer(Modifier.height(4.dp))
                 ChoiceRow(choice) { onPick(choice) }
             }
@@ -94,7 +94,7 @@ fun QualitySheet(
                 ChoiceRow(audio) { onPick(audio) }
             }
 
-            if (muxed.isEmpty()) {
+            if (video.isEmpty()) {
                 Spacer(Modifier.height(14.dp))
                 Text(
                     stringResource(R.string.only_audio_note),

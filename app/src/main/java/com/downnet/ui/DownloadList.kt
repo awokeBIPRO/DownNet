@@ -75,7 +75,9 @@ private fun DownloadCard(item: DownloadItem) {
                 )
             }
 
-            if (item.status == Status.DOWNLOADING || item.status == Status.PUBLISHING) {
+            if (item.status == Status.DOWNLOADING || item.status == Status.MERGING ||
+                item.status == Status.PUBLISHING
+            ) {
                 Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(
                     progress = { item.progress },
@@ -122,13 +124,16 @@ private fun downloadingDetail(item: DownloadItem): String {
     }
     return when (item.status) {
         Status.PUBLISHING -> "Saving to gallery…"
+        Status.MERGING -> "Merging streams…"
         else -> bytes.ifEmpty { "Downloading…" }
     }
 }
 
 private fun statusLabel(item: DownloadItem): String = when (item.status) {
     Status.QUEUED -> "Queued"
-    Status.DOWNLOADING -> "${(item.progress * 100).toInt()}%"
+    Status.DOWNLOADING ->
+        if (item.progress > 0f) "${(item.progress * 100).toInt()}%" else "Downloading"
+    Status.MERGING -> "Merging"
     Status.PUBLISHING -> "Saving"
     Status.DONE -> "Done"
     Status.FAILED -> "Failed"
