@@ -41,7 +41,7 @@ object SharingShortcuts {
             .setShortLabel(context.getString(R.string.shortcut_quick_save))
             .setLongLived(true)
             .setCategories(setOf(CATEGORY))
-            .setIconCompat(IconCompat.createWithResource(context, R.drawable.ic_shortcut_save))
+            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_shortcut_save))
             .setIntent(
                 Intent(context, ShareReceiverActivity::class.java).apply {
                     action = Intent.ACTION_SEND
