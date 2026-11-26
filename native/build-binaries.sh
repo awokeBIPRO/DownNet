@@ -102,9 +102,9 @@ build_qjs_abi() {
     fetch "$QJS_URL" "$QJS_TAG" "$src"
     cd "$src"
     rm -rf "build/$abi"
-    # quickjs-ng builds through CMake — its Makefile has no qjs target (make
-    # falls back to a builtin link rule with no libquickjs, which fails).
-    # The NDK toolchain file wires up the cross compiler.
+    # quickjs-ng builds through CMake: `qjs` is the LIBRARY target there; the
+    # CLI executable is `qjs_exe`. The NDK toolchain file wires up the cross
+    # compiler.
     cmake -B "build/$abi" -S . \
         -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
         -DANDROID_ABI="$abi" \
@@ -112,14 +112,14 @@ build_qjs_abi() {
         -DCMAKE_BUILD_TYPE=MinSizeRel \
         -DCMAKE_EXE_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
         ${EXTRA_CMAKE:-}
-    if ! cmake --build "build/$abi" --target qjs -j"$JOBS"; then
-        # Older/newer trees may not expose a qjs target; build everything.
+    if ! cmake --build "build/$abi" --target qjs_exe -j"$JOBS"; then
+        # Older/newer trees may rename the target; build everything.
         cmake --build "build/$abi" -j"$JOBS"
     fi
     local qjs_bin
-    qjs_bin="$(find "build/$abi" -type f -name qjs | head -1)"
-    if [ -z "$qjs_bin" ]; then
-        echo "qjs binary not found after build" >&2
+    qjs_bin="$(find "build/$abi" -type f \( -name qjs -o -name qjs_exe \) | head -1)"
+    if [ -z "$qjs_bin" ] || [ ! -x "$qjs_bin" ]; then
+        echo "qjs executable not found after build" >&2
         exit 1
     fi
     local out="$REPO/app/src/main/jniLibs/$abi"
