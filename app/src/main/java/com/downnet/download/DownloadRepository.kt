@@ -54,6 +54,7 @@ class DownloadRepository(
 
     private class Job(
         val id: Long,
+        val title: String,
         val url: String,
         val headers: Map<String, String>?,
         val filename: String,
@@ -116,6 +117,7 @@ class DownloadRepository(
         queue.trySend(
             Job(
                 id = id,
+                title = title,
                 url = format.url.orEmpty(),
                 headers = format.httpHeaders,
                 filename = "$title.$ext",

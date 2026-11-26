@@ -3,7 +3,7 @@ package com.downnet.extract.ytdlp
 import android.content.Context
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPython
+import com.chaquo.python.android.AndroidPlatform
 import com.downnet.core.bin.NativeBinaries
 import com.downnet.extract.BridgeResponse
 import com.downnet.extract.MediaInfo
@@ -25,9 +25,6 @@ class YtDlp(private val context: Context) {
 
     private val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val json = Json { ignoreUnknownKeys = true }
-
-    @Volatile
-    private var started = false
 
     suspend fun extract(url: String): Result<MediaInfo> = withContext(dispatcher) {
         runCatching { extractBlocking(url) }
@@ -64,13 +61,14 @@ class YtDlp(private val context: Context) {
     }.getOrElse { "selfcheck failed: ${it.message}" }
 
     private fun ensurePythonStarted() {
-        if (started) return
-        synchronized(this) {
-            if (started) return
-            // Lazy rather than in Application.onCreate: interpreter startup
-            // costs ~0.5-1s and nothing before the first share needs Python.
-            Python.start(AndroidPython(context))
-            started = true
+        // Lazy rather than in Application.onCreate: interpreter startup
+        // costs ~0.5-1s and nothing before the first share needs Python.
+        if (!Python.isStarted()) {
+            synchronized(this) {
+                if (!Python.isStarted()) {
+                    Python.start(AndroidPlatform(context))
+                }
+            }
         }
     }
 }
