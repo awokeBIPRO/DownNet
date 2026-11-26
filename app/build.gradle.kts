@@ -109,7 +109,10 @@ chaquopy {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2026.11.01")
+    // 2026.11.01's artifacts (material3 1.5.0) hard-require compileSdk 37 +
+    // AGP 9.1; 2026.09.00 (material3 1.4.0 / foundation 1.12.1) is the newest
+    // BOM that accepts this AGP 8.10.1 + compileSdk 36 toolchain.
+    val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
